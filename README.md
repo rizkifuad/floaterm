@@ -1,6 +1,6 @@
 # Floaterm
 
-> [!WARNING] Warning
+> [!WARNING]
 > This fork contains AI generated code and only intended for my personal use. Use with caution.
 
 A beautiful toggleable floating window for managing terminal buffers within Neovim
