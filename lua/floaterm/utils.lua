@@ -95,7 +95,8 @@ M.switch_buf = function(buf, term)
   api.nvim_set_current_win(state.win)
   api.nvim_set_current_buf(buf)
 
-  if vim.bo[buf].buftype ~= "terminal" then
+  local starts_terminal = vim.bo[buf].buftype ~= "terminal"
+  if starts_terminal then
     vim.bo[buf].ft = "Floaterm"
     M.convert_buf2term(zmx.enabled() and zmx.attach_command(term.session) or term.cmd)
     volt_redraw(state.barbuf, "bar")
@@ -132,7 +133,7 @@ M.switch_buf = function(buf, term)
     end
   end
 
-  if zmx.enabled() and vim.bo[buf].buftype == "terminal" and vim.b[buf].floaterm_zmx_session ~= term.session then
+  if zmx.enabled() and not starts_terminal and vim.b[buf].floaterm_zmx_session ~= term.session then
     local job_id = vim.b[buf].terminal_job_id
     vim.api.nvim_chan_send(job_id, "\28") -- zmx's Ctrl-\\ detach shortcut
     vim.defer_fn(function()

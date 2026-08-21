@@ -80,7 +80,9 @@ buffer to the selected one.
 ```
 
 The session prefix is `$VIM_SESSION`, so new entries are named
-`$VIM_SESSION.1`, `$VIM_SESSION.2`, and so on. If `VIM_SESSION` is unset, the
+`$VIM_SESSION.1`, `$VIM_SESSION.2`, and so on. If that variable is unset but a
+Neovim session is loaded, Floaterm uses the session filename (for example,
+`~/.local/share/nvim/sessions/dotfiles` becomes `dotfiles`). Otherwise the
 prefix is `abc`. On a fresh Neovim instance Floaterm runs `zmx l --short` and
 restores only sessions matching the current prefix; if there are none, it starts
-with `<prefix>.1`. Set `zmx.session_prefix` to override the environment value.
+with `<prefix>.1`. Set `zmx.session_prefix` to override this behavior.

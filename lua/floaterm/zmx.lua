@@ -14,9 +14,18 @@ function M.prefix()
     return zmx.session_prefix
   end
 
-  -- VIM_SESSION is deliberately used instead of the session file path: it is
-  -- stable across machines and is easy to set from a session manager.
-  return vim.env.VIM_SESSION ~= "" and vim.env.VIM_SESSION or "abc"
+  if vim.env.VIM_SESSION and vim.env.VIM_SESSION ~= "" then
+    return vim.env.VIM_SESSION
+  end
+
+  -- Neovim stores the loaded session as its full path. zmx names should be
+  -- portable and readable, so use just its final component ("dotfiles" here).
+  local session = vim.v.this_session
+  if session and session ~= "" then
+    return vim.fn.fnamemodify(session, ":t")
+  end
+
+  return "abc"
 end
 
 function M.command()
