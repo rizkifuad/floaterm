@@ -44,6 +44,7 @@ A beautiful toggleable floating window for managing terminal buffers within Neov
 This are the mappings for sidebar 
 - <kbd>a</kbd> -> add new terminal
 - <kbd>e</kbd> -> edit terminal name
+- <kbd>d</kbd> -> delete terminal (kill the selected session when zmx is enabled)
 - Pressing any number within sidebar will switch to that terminal
 
 
@@ -71,7 +72,10 @@ Add new mapping
 Set `zmx.enabled = true` to use [zmx](https://github.com/neurosnap/zmx) as the
 terminal backend. Floaterm then keeps only one Neovim terminal buffer: switching
 an entry detaches (`Ctrl + \\`) from the active zmx session and attaches that
-buffer to the selected one.
+buffer to the selected one. The sidebar shows the session prefix as its header
+and displays only the suffix of each session name; zmx still receives the full
+name. In this mode, `<kbd>d</kbd>` kills the selected zmx session and editing is
+unavailable.
 
 ```lua
 {

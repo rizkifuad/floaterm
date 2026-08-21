@@ -6,14 +6,14 @@ local volt_redraw = require("volt").redraw
 local shell = vim.o.shell
 local zmx = require "floaterm.zmx"
 
-M.convert_buf2term = function(cmd)
+M.convert_buf2term = function(cmd, opts)
   if cmd then
     cmd = type(cmd) == "function" and cmd() or cmd
     cmd = { shell, "-c", cmd .. "; " .. shell }
   else
     cmd = { shell }
   end
-  vim.fn.jobstart(cmd, { term = true })
+  vim.fn.jobstart(cmd, { term = true, on_exit = opts and opts.on_exit })
 end
 
 M.new_term = function(opts)
@@ -24,7 +24,7 @@ M.new_term = function(opts)
     return {
       buf = state.zmx_buf,
       time = os.date "%H:%M",
-      name = session,
+      name = zmx.display_name(session),
       session = session,
     }
   end
@@ -68,6 +68,45 @@ M.switch_term = function(term)
   M.switch_buf(term.buf, term)
 end
 
+M.remove_zmx_term = function(term)
+  if not state.volt_set or not zmx.enabled() or not term then
+    return
+  end
+
+  local entry = M.get_term_by_key(term.session, "session")
+  if not entry then
+    return
+  end
+
+  local was_active = M.active_term() == term
+  table.remove(state.terminals, entry[1])
+
+  if #state.terminals == 0 then
+    state.active_terminal = nil
+    state.buf = nil
+    state.zmx_buf = nil
+    state.terminals = nil
+    require("floaterm").toggle()
+    return
+  end
+
+  if not was_active then
+    volt_redraw(state.sidebuf, "bufs")
+    return
+  end
+
+  -- A zmx session owns the process in this shared terminal buffer. Once that
+  -- process exits, start the next session in a fresh buffer.
+  state.zmx_buf = api.nvim_create_buf(false, true)
+  for _, terminal in ipairs(state.terminals) do
+    terminal.buf = state.zmx_buf
+  end
+
+  local next_index = math.min(entry[1], #state.terminals)
+  state.active_terminal = nil
+  M.switch_term(state.terminals[next_index])
+end
+
 M.set_termwin_hl = function()
   if state.config.border then
     vim.wo[state.win].winhl = "Normal:normal,floatborder:comment"
@@ -98,7 +137,16 @@ M.switch_buf = function(buf, term)
   local starts_terminal = vim.bo[buf].buftype ~= "terminal"
   if starts_terminal then
     vim.bo[buf].ft = "Floaterm"
-    M.convert_buf2term(zmx.enabled() and zmx.attach_command(term.session) or term.cmd)
+    M.convert_buf2term(zmx.enabled() and zmx.attach_command(term.session) or term.cmd, zmx.enabled() and {
+      on_exit = function()
+        vim.schedule(function()
+          if api.nvim_buf_is_valid(buf) then
+            local entry = M.get_term_by_key(vim.b[buf].floaterm_zmx_session, "session")
+            M.remove_zmx_term(entry and entry[2])
+          end
+        end)
+      end,
+    } or nil)
     volt_redraw(state.barbuf, "bar")
 
     map({ "t", "n" }, "<C-h>", function()
@@ -163,6 +211,9 @@ end
 
 M.get_buf_on_cursor = function()
   local row = vim.api.nvim_win_get_cursor(0)[1]
+  if zmx.enabled() then
+    row = row - 1
+  end
 
   if not state.terminals[row] then
     vim.notify("place cursor on the terminal name", vim.log.levels.WARN)

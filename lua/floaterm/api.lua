@@ -4,6 +4,14 @@ local volt_redraw = require("volt").redraw
 local zmx = require "floaterm.zmx"
 local M = {}
 
+local function terminal_index(term)
+  for index, terminal in ipairs(state.terminals or {}) do
+    if terminal == term then
+      return index
+    end
+  end
+end
+
 M.edit_name = function()
   if zmx.enabled() then
     vim.notify("floaterm: zmx session names cannot be renamed", vim.log.levels.INFO)
@@ -52,8 +60,13 @@ M.cycle_term_bufs = function(direction)
     return
   end
 
-  local cur_index = zmx.enabled() and { vim.tbl_indexof(state.terminals, state.active_terminal) }
-    or utils.get_term_by_key(state.buf)
+  local cur_index
+  if zmx.enabled() then
+    local index = terminal_index(state.active_terminal)
+    cur_index = index and { index } or nil
+  else
+    cur_index = utils.get_term_by_key(state.buf)
+  end
 
   if not cur_index then
     -- If not in a terminal, switch to the first one
@@ -76,7 +89,7 @@ M.delete_term = function(buf)
   end
 
   if buf then
-    local index = zmx.enabled() and vim.tbl_indexof(state.terminals, state.active_terminal) or utils.get_term_by_key(buf)[1]
+    local index = zmx.enabled() and terminal_index(state.active_terminal) or utils.get_term_by_key(buf)[1]
     local newbuf_i = (index == 1 and index + 1) or index - 1
 
     table.remove(state.terminals, index)
@@ -100,6 +113,18 @@ M.delete_term = function(buf)
     vim.api.nvim_set_option_value("modifiable", true, { buf = state.sidebuf })
 
     volt_redraw(state.sidebuf, "all")
+  end
+end
+
+M.kill_term = function()
+  if not zmx.enabled() then
+    return
+  end
+
+  local row = utils.get_buf_on_cursor()
+  local term = row and state.terminals[row]
+  if term and zmx.kill(term.session) then
+    utils.remove_zmx_term(term)
   end
 end
 

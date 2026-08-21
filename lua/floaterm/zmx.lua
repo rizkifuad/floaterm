@@ -33,7 +33,32 @@ function M.command()
 end
 
 function M.attach_command(session)
-  return M.command() .. " a " .. vim.fn.shellescape(session)
+  local escaped_session = vim.fn.shellescape(session)
+  return M.command()
+    .. " a "
+    .. escaped_session
+    .. "; "
+    .. M.command()
+    .. " l --short | grep -Fqx -- "
+    .. escaped_session
+    .. " || exit"
+end
+
+function M.display_name(session)
+  local prefix = M.prefix() .. "."
+  if vim.startswith(session, prefix) then
+    return session:sub(#prefix + 1)
+  end
+  return session
+end
+
+function M.kill(session)
+  vim.fn.system({ M.command(), "kill", session, "--force" })
+  if vim.v.shell_error ~= 0 then
+    vim.notify("floaterm: unable to kill zmx session " .. session, vim.log.levels.ERROR)
+    return false
+  end
+  return true
 end
 
 function M.list_sessions()
@@ -86,7 +111,7 @@ function M.restore()
 
   local terminals = {}
   for _, session in ipairs(sessions) do
-    table.insert(terminals, { name = session, session = session })
+    table.insert(terminals, { name = M.display_name(session), session = session })
   end
   return terminals
 end

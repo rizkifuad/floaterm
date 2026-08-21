@@ -2,6 +2,7 @@ local M = {}
 local state = require "floaterm.state"
 local utils = require "floaterm.utils"
 local voltui = require "volt.ui"
+local zmx = require "floaterm.zmx"
 
 local num_icons = {
   -- '󰎡',
@@ -18,6 +19,10 @@ local num_icons = {
 
 M.items = function()
   local lines = {}
+
+  if zmx.enabled() then
+    table.insert(lines, voltui.hpad({ { "󱂬  " .. zmx.prefix(), "ExGreen" } }, 18))
+  end
 
   for i, v in ipairs(state.terminals) do
     local icon = "" .. "  "
@@ -40,7 +45,11 @@ M.items = function()
   end
 
   table.insert(lines, voltui.separator("-", 18))
-  table.insert(lines, { { "a - add", "comment" }, { "  e - edit", "comment" } })
+  if zmx.enabled() then
+    table.insert(lines, { { "a - add", "comment" }, { "  d - kill", "comment" } })
+  else
+    table.insert(lines, { { "a - add", "comment" }, { "  e - edit", "comment" } })
+  end
 
   return lines
 end
