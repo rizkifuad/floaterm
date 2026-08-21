@@ -1,5 +1,8 @@
 # Floaterm
 
+> [!WARNING] Warning
+> This fork contains AI generated code and only intended for my personal use. Use with caution.
+
 A beautiful toggleable floating window for managing terminal buffers within Neovim
 
 ![floaterm-with-border](https://github.com/user-attachments/assets/8a51aeff-dcc5-477f-a282-9b48a1e5bf2b)
@@ -62,3 +65,22 @@ Add new mapping
      },
   },
 ```
+
+## zmx sessions
+
+Set `zmx.enabled = true` to use [zmx](https://github.com/neurosnap/zmx) as the
+terminal backend. Floaterm then keeps only one Neovim terminal buffer: switching
+an entry detaches (`Ctrl + \\`) from the active zmx session and attaches that
+buffer to the selected one.
+
+```lua
+{
+  zmx = { enabled = true },
+}
+```
+
+The session prefix is `$VIM_SESSION`, so new entries are named
+`$VIM_SESSION.1`, `$VIM_SESSION.2`, and so on. If `VIM_SESSION` is unset, the
+prefix is `abc`. On a fresh Neovim instance Floaterm runs `zmx l --short` and
+restores only sessions matching the current prefix; if there are none, it starts
+with `<prefix>.1`. Set `zmx.session_prefix` to override the environment value.

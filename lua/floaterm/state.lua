@@ -14,6 +14,13 @@ local M = {
 
     -- must be functions
     mappings = { sidebar = nil, term = nil },
+    -- Reuse one Neovim terminal buffer and keep the actual shells in zmx.
+    -- Session names are $VIM_SESSION.1, $VIM_SESSION.2, ... (or abc.*).
+    zmx = {
+      enabled = false,
+      command = "zmx",
+      session_prefix = nil,
+    },
     terminals = {
       { name = "Terminal" },
     },

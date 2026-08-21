@@ -5,6 +5,7 @@ local state = require "floaterm.state"
 local volt = require "volt"
 local volt_redraw = require("volt").redraw
 local layout = require "floaterm.layout"
+local zmx = require "floaterm.zmx"
 
 M.setup = function(opts)
   state.config = vim.tbl_deep_extend("force", state.config, opts or {})
@@ -19,7 +20,7 @@ M.open = function()
   local conf = state.config
   local bordered = conf.border
   local usr_terms = type(conf.terminals) == "table" and conf.terminals or conf.terminals()
-  state.terminals = state.terminals or vim.tbl_deep_extend("force", {}, usr_terms)
+  state.terminals = state.terminals or (zmx.enabled() and zmx.restore() or vim.tbl_deep_extend("force", {}, usr_terms))
 
   utils.gen_term_bufs()
   state.buf = state.buf or state.terminals[1].buf
@@ -134,7 +135,7 @@ M.open = function()
     group = api.nvim_create_augroup("FloatermAu", { clear = true }),
     callback = function(args)
       vim.schedule(function()
-        if state.volt_set and utils.get_term_by_key(args.buf) then
+        if state.volt_set and not zmx.enabled() and utils.get_term_by_key(args.buf) then
           require("floaterm.api").delete_term(args.buf)
         end
       end)

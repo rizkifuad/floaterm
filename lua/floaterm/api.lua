@@ -1,9 +1,14 @@
 local state = require "floaterm.state"
 local utils = require "floaterm.utils"
 local volt_redraw = require("volt").redraw
+local zmx = require "floaterm.zmx"
 local M = {}
 
 M.edit_name = function()
+  if zmx.enabled() then
+    vim.notify("floaterm: zmx session names cannot be renamed", vim.log.levels.INFO)
+    return
+  end
   local row = utils.get_buf_on_cursor()
 
   if row then
@@ -18,7 +23,7 @@ end
 M.new_term = function(opts)
   opts = opts or {}
 
-  if opts.name == "auto" then
+  if opts.name == "auto" and not zmx.enabled() then
     vim.ui.input({ prompt = "   Enter name: " }, function(input)
       opts.name = input
       vim.api.nvim_echo({}, false, {})
@@ -29,7 +34,7 @@ M.new_term = function(opts)
   table.insert(state.terminals, details)
 
   if not opts.hidden then
-    utils.switch_buf(details.buf)
+    utils.switch_term(details)
   end
 
   utils.add_keymap(#state.terminals, details.buf)
@@ -47,16 +52,17 @@ M.cycle_term_bufs = function(direction)
     return
   end
 
-  local cur_index = utils.get_term_by_key(state.buf)
+  local cur_index = zmx.enabled() and { vim.tbl_indexof(state.terminals, state.active_terminal) }
+    or utils.get_term_by_key(state.buf)
 
   if not cur_index then
     -- If not in a terminal, switch to the first one
-    utils.switch_buf(state.terminals[1].buf)
+    utils.switch_term(state.terminals[1])
     return
   end
 
   local new_index = (cur_index[1] + (direction == "prev" and -2 or 0)) % #state.terminals
-  utils.switch_buf(state.terminals[new_index + 1].buf)
+  utils.switch_term(state.terminals[new_index + 1])
 end
 
 M.delete_term = function(buf)
@@ -70,7 +76,7 @@ M.delete_term = function(buf)
   end
 
   if buf then
-    local index = utils.get_term_by_key(buf)[1]
+    local index = zmx.enabled() and vim.tbl_indexof(state.terminals, state.active_terminal) or utils.get_term_by_key(buf)[1]
     local newbuf_i = (index == 1 and index + 1) or index - 1
 
     table.remove(state.terminals, index)
@@ -81,11 +87,11 @@ M.delete_term = function(buf)
 
     newbuf_i = #state.terminals == 1 and 1 or newbuf_i
 
-    if method == "manual" then
+    if method == "manual" and not zmx.enabled() then
       vim.api.nvim_buf_delete(buf, { force = true })
     end
 
-    utils.switch_buf(state.terminals[newbuf_i].buf)
+    utils.switch_term(state.terminals[newbuf_i])
 
     local total_lines = vim.api.nvim_buf_get_lines(state.sidebuf, 0, -1, false)
 
@@ -104,7 +110,7 @@ M.send_cmd = function(opts)
   else
     opts.cmd = type(opts.cmd) == "string" and opts.cmd or opts.cmd()
     opts.buf = opts.buf or state.buf
-    local bufdetails = utils.get_term_by_key(opts.buf)[2]
+    local bufdetails = zmx.enabled() and utils.active_term() or utils.get_term_by_key(opts.buf)[2]
 
     if opts.name then
       bufdetails = utils.get_term_by_key(opts.name, "name")[2]

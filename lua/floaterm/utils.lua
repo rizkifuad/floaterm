@@ -4,6 +4,7 @@ local map = vim.keymap.set
 local state = require "floaterm.state"
 local volt_redraw = require("volt").redraw
 local shell = vim.o.shell
+local zmx = require "floaterm.zmx"
 
 M.convert_buf2term = function(cmd)
   if cmd then
@@ -16,6 +17,18 @@ M.convert_buf2term = function(cmd)
 end
 
 M.new_term = function(opts)
+  if zmx.enabled() then
+    opts = opts or {}
+    local session = opts.session or zmx.next_session(state.terminals)
+    state.zmx_buf = state.zmx_buf or api.nvim_create_buf(false, true)
+    return {
+      buf = state.zmx_buf,
+      time = os.date "%H:%M",
+      name = session,
+      session = session,
+    }
+  end
+
   local defaults = {
     buf = api.nvim_create_buf(false, true),
     time = os.date "%H:%M",
@@ -27,16 +40,32 @@ end
 
 M.add_keymap = function(key, buf)
   map("n", tostring(key), function()
-    M.switch_buf(buf)
+    M.switch_term(state.terminals[key])
   end, { buffer = state.sidebuf })
 end
 
 M.gen_term_bufs = function()
   for i, _ in ipairs(state.terminals) do
-    state.terminals[i] = vim.tbl_extend("force", M.new_term(), state.terminals[i])
+    local term = state.terminals[i]
+    state.terminals[i] = vim.tbl_extend("force", M.new_term(zmx.enabled() and term or nil), term)
     local buf = state.terminals[i].buf
     M.add_keymap(i, buf)
   end
+end
+
+M.active_term = function()
+  if state.active_terminal then
+    return state.active_terminal
+  end
+  return M.get_term_by_key(state.buf) and M.get_term_by_key(state.buf)[2]
+end
+
+M.switch_term = function(term)
+  if not term then
+    return
+  end
+  state.active_terminal = term
+  M.switch_buf(term.buf, term)
 end
 
 M.set_termwin_hl = function()
@@ -47,8 +76,13 @@ M.set_termwin_hl = function()
   end
 end
 
-M.switch_buf = function(buf)
+M.switch_buf = function(buf, term)
   state.buf = buf
+
+  term = term or M.get_term_by_key(buf)[2]
+  if zmx.enabled() then
+    state.active_terminal = term
+  end
 
   volt_redraw(state.sidebuf, "bufs")
   volt_redraw(state.barbuf, "bar")
@@ -61,13 +95,9 @@ M.switch_buf = function(buf)
   api.nvim_set_current_win(state.win)
   api.nvim_set_current_buf(buf)
 
-  local details = vim.tbl_filter(function(x)
-    return x.buf == buf
-  end, state.terminals)
-
   if vim.bo[buf].buftype ~= "terminal" then
     vim.bo[buf].ft = "Floaterm"
-    M.convert_buf2term(details[1].cmd)
+    M.convert_buf2term(zmx.enabled() and zmx.attach_command(term.session) or term.cmd)
     volt_redraw(state.barbuf, "bar")
 
     map({ "t", "n" }, "<C-h>", function()
@@ -89,6 +119,8 @@ M.switch_buf = function(buf)
         state.volt_set = false
         state.terminals = nil
         state.buf = nil
+        state.zmx_buf = nil
+        state.active_terminal = nil
         state.sidebuf = nil
         state.barbuf = nil
         api.nvim_del_augroup_by_name "FloatermAu"
@@ -98,6 +130,19 @@ M.switch_buf = function(buf)
     if state.config.mappings.term then
       state.config.mappings.term(state.buf)
     end
+  end
+
+  if zmx.enabled() and vim.bo[buf].buftype == "terminal" and vim.b[buf].floaterm_zmx_session ~= term.session then
+    local job_id = vim.b[buf].terminal_job_id
+    vim.api.nvim_chan_send(job_id, "\28") -- zmx's Ctrl-\\ detach shortcut
+    vim.defer_fn(function()
+      if vim.api.nvim_buf_is_valid(buf) and vim.b[buf].terminal_job_id == job_id then
+        vim.api.nvim_chan_send(job_id, zmx.attach_command(term.session) .. "\r")
+      end
+    end, 30)
+  end
+  if zmx.enabled() and vim.bo[buf].buftype == "terminal" then
+    vim.b[buf].floaterm_zmx_session = term.session
   end
 
   if state.config.autoinsert then

@@ -22,10 +22,10 @@ M.items = function()
   for i, v in ipairs(state.terminals) do
     local icon = "" .. "  "
     local label = icon .. (v.name or "Terminal")
-    local hl = state.buf == v.buf and "ExGreen" or "Comment"
+    local hl = utils.active_term() == v and "ExGreen" or "Comment"
     local actions = {
       click = function()
-        utils.switch_buf(v.buf)
+        utils.switch_term(v)
       end,
     }
     local line = { { label, hl, actions }, { "_pad_" }, { num_icons[i] or tostring(i), hl } }
@@ -48,7 +48,7 @@ end
 M.bar = function()
   local w = state.w - 20 - 2
 
-  local active_term = utils.get_term_by_key(state.buf)[2]
+  local active_term = utils.active_term()
   local active_label = "  " .. active_term.name
 
   local bytes = vim.api.nvim_buf_get_offset(state.buf, vim.api.nvim_buf_line_count(state.buf)) - 1
