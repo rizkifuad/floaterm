@@ -12,6 +12,28 @@ M.setup = function(opts)
 end
 
 M.open = function()
+  if zmx.enabled() and not state.terminals and #zmx.list_sessions() == 0 then
+    if state.zmx_prompting then
+      return
+    end
+    state.zmx_prompting = true
+    vim.ui.input({ prompt = "   Enter first session name: " }, function(input)
+      state.zmx_prompting = nil
+      if not input or vim.trim(input) == "" then
+        return
+      end
+
+      local session = zmx.session_name(input)
+      if zmx.session_exists(session) then
+        state.terminals = zmx.restore()
+      else
+        state.terminals = { { name = zmx.display_name(session), session = session } }
+      end
+      M.open()
+    end)
+    return
+  end
+
   state.volt_set = true
   state.sidebuf = state.sidebuf or api.nvim_create_buf(false, true)
   state.barbuf = state.barbuf or api.nvim_create_buf(false, true)
