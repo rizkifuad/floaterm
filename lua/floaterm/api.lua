@@ -31,6 +31,34 @@ end
 M.new_term = function(opts)
   opts = opts or {}
 
+  local function create_term()
+    local details = utils.new_term(opts)
+    table.insert(state.terminals, details)
+
+    if not opts.hidden then
+      utils.switch_term(details)
+    end
+
+    utils.add_keymap(#state.terminals, details.buf)
+  end
+
+  if zmx.enabled() and not opts.session then
+    vim.ui.input({ prompt = "   Enter session name: " }, function(input)
+      if not input or vim.trim(input) == "" then
+        return
+      end
+
+      opts.session = zmx.session_name(input)
+      if zmx.session_exists(opts.session) then
+        vim.notify("floaterm: zmx session already exists: " .. opts.session, vim.log.levels.WARN)
+        return
+      end
+
+      create_term()
+    end)
+    return
+  end
+
   if opts.name == "auto" and not zmx.enabled() then
     vim.ui.input({ prompt = "   Enter name: " }, function(input)
       opts.name = input
@@ -38,14 +66,7 @@ M.new_term = function(opts)
     end)
   end
 
-  local details = utils.new_term(opts)
-  table.insert(state.terminals, details)
-
-  if not opts.hidden then
-    utils.switch_term(details)
-  end
-
-  utils.add_keymap(#state.terminals, details.buf)
+  create_term()
 end
 
 M.switch_wins = function()

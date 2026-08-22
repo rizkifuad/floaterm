@@ -52,6 +52,21 @@ function M.display_name(session)
   return session
 end
 
+function M.session_name(name)
+  name = vim.trim(name)
+  local prefix = M.prefix() .. "."
+  return vim.startswith(name, prefix) and name or prefix .. name
+end
+
+function M.session_exists(session)
+  for _, name in ipairs(M.list_sessions()) do
+    if name == session then
+      return true
+    end
+  end
+  return false
+end
+
 function M.kill(session)
   vim.fn.system({ M.command(), "kill", session, "--force" })
   if vim.v.shell_error ~= 0 then

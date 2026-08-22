@@ -75,7 +75,8 @@ an entry detaches (`Ctrl + \\`) from the active zmx session and attaches that
 buffer to the selected one. The sidebar shows the session prefix as its header
 and displays only the suffix of each session name; zmx still receives the full
 name. In this mode, `<kbd>d</kbd>` kills the selected zmx session and editing is
-unavailable.
+unavailable. Adding a session prompts for its name; entering `agent` creates
+`<prefix>.agent`, while an empty value or Escape creates nothing.
 
 ```lua
 {
