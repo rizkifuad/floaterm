@@ -45,7 +45,8 @@ M.open = function()
   state.terminals = state.terminals or (zmx.enabled() and zmx.restore() or vim.tbl_deep_extend("force", {}, usr_terms))
 
   utils.gen_term_bufs()
-  state.buf = state.buf or state.terminals[1].buf
+  local initial_term = zmx.enabled() and (utils.active_term() or state.terminals[1]) or nil
+  state.buf = initial_term and initial_term.buf or state.buf or state.terminals[1].buf
 
   ----------- calculate h,w
   state.h = math.floor(vim.o.lines * (conf.size.h / 100))
@@ -135,7 +136,7 @@ M.open = function()
   state.win = api.nvim_open_win(state.buf, true, state.term_win_opts)
 
   utils.set_termwin_hl()
-  utils.switch_buf(state.buf)
+  utils.switch_buf(state.buf, initial_term)
   volt_redraw(state.barbuf, "bar")
 
   require "floaterm.mappings"()
