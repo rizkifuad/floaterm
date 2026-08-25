@@ -48,6 +48,9 @@ M.gen_term_bufs = function()
   for i, _ in ipairs(state.terminals) do
     local term = state.terminals[i]
     state.terminals[i] = vim.tbl_extend("force", M.new_term(zmx.enabled() and term or nil), term)
+    if state.active_terminal == term then
+      state.active_terminal = state.terminals[i]
+    end
     local buf = state.terminals[i].buf
     M.add_keymap(i, buf)
   end
