@@ -153,6 +153,10 @@ M.switch_buf = function(buf, term)
       require("floaterm.api").switch_wins()
     end, { buffer = state.buf })
 
+    map({ "t", "n" }, "<C-a>", function()
+      require("floaterm.api").new_term()
+    end, { buffer = state.buf })
+
     map({ "n", "t" }, "<C-j>", function()
       require("floaterm.api").cycle_term_bufs "next"
     end, { buffer = state.buf })

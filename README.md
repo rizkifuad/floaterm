@@ -50,6 +50,7 @@ This are the mappings for sidebar
 
 Must be pressed in main terminal buffer
 - <kbd>Ctrl + h</kbd> -> Switch to sidebar
+- <kbd>Ctrl + a</kbd> -> Add a new terminal/session
 - <kbd>Ctrl + j</kbd> -> Cycle to prev terminal
 - <kbd>Ctrl + k</kbd> -> Cycle to next terminal
 
