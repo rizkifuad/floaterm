@@ -78,7 +78,7 @@ and displays only the suffix of each session name; zmx still receives the full
 name. In this mode, `<kbd>d</kbd>` kills the selected zmx session and editing is
 unavailable. Adding a session prompts for its name; entering `agent` creates
 `<prefix>.agent`, while an empty value or Escape creates nothing.
-When no zmx sessions exist, the first Floaterm toggle uses the same prompt.
+When no zmx sessions exist, the first Floaterm toggle creates `<prefix>.console`.
 
 ```lua
 {
