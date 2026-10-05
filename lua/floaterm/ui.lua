@@ -18,10 +18,10 @@ local num_icons = {
 }
 
 M.items = function()
-  local lines = {}
+  local items = {}
 
   if zmx.enabled() then
-    table.insert(lines, voltui.hpad({ { "󱂬  " .. zmx.prefix(), "ExGreen" } }, 18))
+    table.insert(items, { "󱂬  " .. zmx.prefix(), "ExGreen" })
   end
 
   for i, v in ipairs(state.terminals) do
@@ -33,29 +33,27 @@ M.items = function()
         utils.switch_term(v)
       end,
     }
-    local line = { { label, hl, actions }, { "_pad_" }, { num_icons[i] or tostring(i), hl } }
-    table.insert(lines, voltui.hpad(line, 18))
+    table.insert(items, { " " .. (num_icons[i] or tostring(i)) .. " " .. label .. " ", hl, actions })
   end
 
-  -- 2 cuz 2 lines for help keymaps
-  local empty_lines_to_fill = state.h - #lines - 2
+  table.insert(items, { "  a add  ", "comment", { click = function() require("floaterm.api").new_term() end } })
+  table.insert(items, {
+    zmx.enabled() and "  d kill  " or "  e edit  ",
+    "comment",
+    { click = function()
+      if zmx.enabled() then
+        require("floaterm.api").kill_term()
+      else
+        require("floaterm.api").edit_name()
+      end
+    end },
+  })
 
-  for _ = 1, empty_lines_to_fill, 1 do
-    table.insert(lines, { })
-  end
-
-  table.insert(lines, voltui.separator("-", 18))
-  if zmx.enabled() then
-    table.insert(lines, { { "a - add", "comment" }, { "  d - kill", "comment" } })
-  else
-    table.insert(lines, { { "a - add", "comment" }, { "  e - edit", "comment" } })
-  end
-
-  return lines
+  return { voltui.hpad(items, state.w - (state.config.border and 2 or 0)) }
 end
 
 M.bar = function()
-  local w = state.w - 20 - 2
+  local w = state.w - (state.config.border and 2 or 0)
 
   local active_term = utils.active_term()
   local active_label = "  " .. active_term.name

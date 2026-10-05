@@ -217,17 +217,13 @@ M.get_term_by_key = function(tocompare, name)
 end
 
 M.get_buf_on_cursor = function()
-  local row = vim.api.nvim_win_get_cursor(0)[1]
-  if zmx.enabled() then
-    row = row - 1
+  local active = M.active_term()
+  for index, term in ipairs(state.terminals or {}) do
+    if term == active then
+      return index
+    end
   end
-
-  if not state.terminals[row] then
-    vim.notify("place cursor on the terminal name", vim.log.levels.WARN)
-    return
-  end
-
-  return row
+  vim.notify("no active terminal", vim.log.levels.WARN)
 end
 
 M.close_timers = function()

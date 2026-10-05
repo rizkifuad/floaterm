@@ -35,7 +35,7 @@ M.open = function()
   state.h = math.floor(vim.o.lines * (conf.size.h / 100))
   state.w = math.floor(vim.o.columns * (conf.size.w / 100))
 
-  local sidebar_w = 20
+  local sidebar_h = 1
 
   if conf.position then 
      conf.position = type(conf.position) == 'table' and conf.position or conf.position()
@@ -44,18 +44,16 @@ M.open = function()
   local pos_row = conf.position and conf.position.row or (vim.o.lines / 2 - state.h / 2) - 1
   local pos_col = conf.position and conf.position.col or (vim.o.columns / 2 - state.w / 2)
 
-  local sidebar_win_opts = {
-    row = pos_row,
-    col = pos_col,
-    width = sidebar_w,
-    height = state.h,
+  state.sidewin = api.nvim_open_win(state.sidebuf, false, {
+    row = pos_row + state.h - sidebar_h,
+    col = pos_col + (bordered and 1 or 0),
+    width = state.w - (bordered and 2 or 0),
+    height = sidebar_h,
     relative = "editor",
     style = "minimal",
-    border = "single",
-    zindex = 100,
-  }
-
-  state.sidewin = api.nvim_open_win(state.sidebuf, true, sidebar_win_opts)
+    border = "none",
+    zindex = 101,
+  })
 
   local colored_border = {
     { " ", "exdarkborder" },
@@ -69,12 +67,11 @@ M.open = function()
   }
 
   state.term_win_opts = {
-    row = 2,
-    col = sidebar_w + (bordered and 2 or 1),
-    win = state.sidewin,
-    width = state.w - sidebar_w,
-    height = state.h - 3,
-    relative = "win",
+    row = pos_row + (bordered and 1 or 0),
+    col = pos_col + (bordered and 1 or 0),
+    width = state.w - (bordered and 2 or 0),
+    height = state.h - 2 - (bordered and 2 or 0),
+    relative = "editor",
     style = "minimal",
     border = bordered and "single" or colored_border,
     zindex = 100,
@@ -83,14 +80,13 @@ M.open = function()
   api.nvim_win_set_hl_ns(state.sidewin, state.ns)
 
   local bar_win_opts = {
-    row = -1,
-    col = sidebar_w + (bordered and 2 or 1),
-    win = state.sidewin,
-    width = state.w - sidebar_w,
+    row = pos_row + state.h - 2,
+    col = pos_col + (bordered and 1 or 0),
+    width = state.w - (bordered and 2 or 0),
     height = 1,
-    relative = "win",
+    relative = "editor",
     style = "minimal",
-    border = "single",
+    border = "none",
     zindex = 100,
   }
 
@@ -113,7 +109,7 @@ M.open = function()
   api.nvim_set_option_value("modifiable", true, { buf = state.sidebuf })
   api.nvim_set_option_value("modifiable", true, { buf = state.barbuf })
 
-  volt.run(state.sidebuf, { h = sidebar_win_opts.height, w = sidebar_win_opts.width })
+  volt.run(state.sidebuf, { h = sidebar_h, w = state.w - (bordered and 2 or 0) })
   volt.run(state.barbuf, { h = 1, w = bar_win_opts.width })
 
   state.win = api.nvim_open_win(state.buf, true, state.term_win_opts)
@@ -135,7 +131,7 @@ M.open = function()
     end)
   )
 
-  vim.bo[state.sidebuf].ft = "FloatermSidebar"
+  vim.bo[state.sidebuf].ft = "FloatermBar"
 
   api.nvim_create_autocmd("WinClosed", {
     group = api.nvim_create_augroup("FloatermAu", { clear = true }),

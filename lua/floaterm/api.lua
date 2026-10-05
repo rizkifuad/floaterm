@@ -127,13 +127,7 @@ M.delete_term = function(buf)
 
     utils.switch_term(state.terminals[newbuf_i])
 
-    local total_lines = vim.api.nvim_buf_get_lines(state.sidebuf, 0, -1, false)
-
-    vim.api.nvim_set_option_value("modifiable", true, { buf = state.sidebuf })
-    require("volt").set_empty_lines(state.sidebuf, #total_lines, 20)
-    vim.api.nvim_set_option_value("modifiable", true, { buf = state.sidebuf })
-
-    volt_redraw(state.sidebuf, "all")
+    volt_redraw(state.sidebuf, "bufs")
   end
 end
 
